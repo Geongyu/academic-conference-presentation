@@ -1,4 +1,4 @@
-# Academic Conference Presentation · v1.0.0
+# Academic Conference Presentation · v1.1.0
 
 학회 **구두발표(Oral Presentation)** 자료를 제작하는 AI 에이전트용 스킬 패키지입니다.
 원자료 검토부터 논지 개요 승인, 선호 색상 기반 디자인 시스템 구축, 편집 가능한 PPTX 및 발표 노트 생성, 렌더링 시각 검수와 과학적 검증까지 전 과정을 단일 작업 흐름으로 지원합니다.
