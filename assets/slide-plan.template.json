@@ -1,0 +1,39 @@
+{
+  "approval": {
+    "status": "pending",
+    "instruction_evidence": null,
+    "approved_revision": null
+  },
+  "revision": "outline-v1",
+  "theme_file": "theme.json",
+  "available_speaking_seconds": 900,
+  "target_speaking_seconds": 810,
+  "slides": [
+    {
+      "id": "S01",
+      "main_or_backup": "main",
+      "title": "<source-supported title>",
+      "purpose": "<one communicative purpose>",
+      "claim_ids": [
+        "C01"
+      ],
+      "evidence_locators": [
+        "SRC01: <page/panel>"
+      ],
+      "layout": "<choose appropriate layout>",
+      "visual_assets": [
+        "A01"
+      ],
+      "estimated_seconds": 60,
+      "essential_caveat": null,
+      "notes": {
+        "language": "<requested notes language>",
+        "objective": "<purpose>",
+        "explanation": "<spoken explanation beyond visible text>",
+        "visual_cue": "<what to point to>",
+        "transition": "<link to next slide>",
+        "source_and_caveats": "<verified locator and scope>"
+      }
+    }
+  ]
+}

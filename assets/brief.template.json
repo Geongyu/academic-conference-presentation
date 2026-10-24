@@ -1,0 +1,23 @@
+{
+  "presentation_type": "academic-conference-oral",
+  "talk_minutes": 15,
+  "qa_included": false,
+  "qa_minutes": null,
+  "timing_buffer_fraction": 0.1,
+  "audience": "broad-field researchers",
+  "slide_language": "<conversation language or explicit request>",
+  "notes_language": "<conversation language or explicit request>",
+  "preferred_color": "#2457C5",
+  "background_mode": "light",
+  "aspect_ratio": "16:9",
+  "font_family": "<verify an installed family supporting the required languages>",
+  "venue": null,
+  "mandatory_template": null,
+  "required_disclosures": [],
+  "source_files": [],
+  "requested_output": "pptx",
+  "approval_mode": "checkpoint",
+  "assumptions": [
+    "Defaults are assumptions until confirmed; never default scientific details."
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "sources": [
+    {
+      "id": "SRC01",
+      "path_or_identifier": "<source path or DOI>",
+      "version": "<file version/date/hash>",
+      "accessed": false,
+      "source_type": "<paper/user-data/other>"
+    }
+  ],
+  "claims": [
+    {
+      "id": "C01",
+      "statement": "<supported statement>",
+      "source_id": "SRC01",
+      "locator": "<page, figure panel, table or data range>",
+      "source_quote_or_value": null,
+      "display_value": null,
+      "unit": null,
+      "denominator_or_evaluation_unit": null,
+      "uncertainty_definition": null,
+      "qualifiers": [],
+      "assistant_calculation": null,
+      "verification_status": "pending"
+    }
+  ],
+  "assets": [
+    {
+      "id": "A01",
+      "source_id": "SRC01",
+      "locator": "<exact panel>",
+      "path": "<local path>",
+      "transformation": "<reproduced/cropped/adapted/redrawn>",
+      "caption_checked": false,
+      "scientific_context_preserved": false
+    }
+  ]
+}

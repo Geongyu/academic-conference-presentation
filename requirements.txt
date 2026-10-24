@@ -1,0 +1,4 @@
+# Local helper route. LibreOffice and fonts are system dependencies, not pip packages.
+python-pptx>=1.0.2,<2
+PyMuPDF>=1.26.7,<2
+Pillow>=10,<13
