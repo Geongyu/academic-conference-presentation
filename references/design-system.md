@@ -1,7 +1,6 @@
 # Color-led academic design system
 
-These are this skill's adjustable defaults, not universal conference standards.
-Actual venue requirements, the user's explicit preferences, and rendered
+Adjustable defaults. Venue requirements, explicit user preferences, and rendered
 readability take priority.
 
 ## 1. Inputs and tokens
@@ -27,6 +26,12 @@ secondary text `#526174`. `scripts/make_theme.py` produces the complete theme:
 | border | Decorative separator, not the sole carrier of meaning |
 | secondary | Optional independent comparison accent, not mandatory |
 
+The bundled helpers apply only `background`, `text`, `muted_text`, and `primary`
+by default. The other roles are for project code (grouping fills, tables, chart
+series, emphasis); use them deliberately or leave them unused. `semantic_map` is
+written empty: fill it in `theme.json` by hand (series or object name → token or
+HEX) before building charts that need stable colors.
+
 Keep the original identity color while deriving safer roles. A yellow preference
 must not produce yellow body text on white. A black preference should not turn
 the whole deck black unless a dark background was requested. The engine records
@@ -40,14 +45,13 @@ surfaces and darker label variants. Freeze palette tokens before full production
 ## 2. Contrast and scientific color semantics
 
 Adopt at least 4.5:1 for ordinary text and 3:1 for necessary graphical marks as
-engineering targets. These draw on WCAG contrast guidance, but are not a claim
-that passing WCAG guarantees readability on a projector. Prefer the stronger
-text target even for slide titles. Assess each real foreground/background pair;
-a token check alone does not validate charts, photos, or imported figures.
+engineering targets (from WCAG contrast guidance). Prefer the stronger text
+target even for slide titles. Assess each real foreground/background pair,
+including text on charts, photos, and imported figures.
 
-Map named series/objects to fixed colors in `theme.json`. Redundant labels,
+Map named series/objects to fixed colors in `semantic_map`. Redundant labels,
 markers, line styles, and position must distinguish information without color
-alone. Do not certify color-vision accessibility from contrast ratios alone.
+alone.
 
 If a scientific image encodes quantities, retain its original color mapping,
 legend, and range. Do not hue-shift microscopy, heatmaps, or experimental images
@@ -75,17 +79,17 @@ A citation can be secondary, but a small footnote cannot rescue an overstated
 claim. Prefer one family with real regular/bold weights and consistent numerals.
 
 Korean-family candidates, in preference order: Noto Sans CJK KR, Noto Sans KR,
-Malgun Gothic, Apple SD Gothic Neo, NanumGothic. These are candidates, not promises
-that any one is installed. Verify the actual selected family and glyph coverage.
+Malgun Gothic, Apple SD Gothic Neo, NanumGothic. Verify the actual selected
+family and glyph coverage.
 On Fontconfig systems use `fc-list` to check installation; `fc-match` alone can
 return a substitute and must not be treated as proof of an exact match. Else
 inspect the host's font inventory and perform a render test. For other languages,
 select an installed family supporting all required scripts.
 
-`scripts/pptx_helpers.py` explicitly writes Latin and East Asian font names on
-text runs. This does not install fonts, embed them, or guarantee recipient-machine
-availability. Keep font names and substitution risks in the delivery report;
-provide a PDF fallback. Do not bundle font binaries. Recheck Hangul syllables,
+`scripts/pptx_helpers.py` writes Latin and East Asian font names on text runs
+(names only; see the tool limits in `qa.md`). Keep font names and substitution
+risks in the delivery report; provide a PDF fallback. Do not bundle font
+binaries. Recheck Hangul syllables,
 spacing, mixed-language labels, Greek symbols, minus signs, superscripts, and
 line wrapping in the final render. Avoid automatic shrink-to-fit as a fix.
 

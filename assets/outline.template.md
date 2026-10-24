@@ -8,6 +8,7 @@ Talk duration:
 Q&A included or separate:
 Audience:
 Slide language / notes language:
+Writing guide (Korean: references/korean-writing.md):
 Venue/template constraints:
 Color HEX / background / installed font:
 Source versions:

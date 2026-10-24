@@ -4,11 +4,23 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 import sys
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.util import Inches
+
+
+def unresolved_markers(text: str) -> list[str]:
+    return sorted(set(re.findall(r'\[(?:NEEDS SOURCE|TBD|TODO)\]|<[^<>\n]+>', text)))
+
+
+def walk_shapes(shapes, in_group: bool = False):
+    for shape in shapes:
+        yield shape, in_group
+        if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+            yield from walk_shapes(shape.shapes, True)
 
 
 def check_deck(path: Path) -> dict:
@@ -26,9 +38,11 @@ def check_deck(path: Path) -> dict:
             errors.append({'slide': number, 'issue': 'Embedded speaker notes missing or empty.'})
         else:
             notes_count += 1
-        for shape in slide.shapes:
+            for marker in unresolved_markers(frame.text):
+                errors.append({'slide': number, 'shape': 'speaker-notes', 'issue': f'Unresolved marker: {marker}'})
+        for shape, in_group in walk_shapes(slide.shapes):
             record = {'slide': number, 'shape': shape.name}
-            if (shape.left < -tolerance or shape.top < -tolerance or
+            if not in_group and (shape.left < -tolerance or shape.top < -tolerance or
                 shape.left + shape.width > prs.slide_width + tolerance or
                 shape.top + shape.height > prs.slide_height + tolerance):
                 errors.append({**record, 'issue': 'Outer shape bounds extend beyond slide.'})
@@ -42,9 +56,8 @@ def check_deck(path: Path) -> dict:
             if shape.has_table:
                 frames.extend(cell.text_frame for row in shape.table.rows for cell in row.cells)
             for text_frame in frames:
-                for marker in ('[NEEDS SOURCE]', '[TBD]', '[TODO]'):
-                    if marker in text_frame.text:
-                        errors.append({**record, 'issue': f'Unresolved marker: {marker}'})
+                for marker in unresolved_markers(text_frame.text):
+                    errors.append({**record, 'issue': f'Unresolved marker: {marker}'})
                 for paragraph in text_frame.paragraphs:
                     for run in paragraph.runs:
                         if (run.text.strip() and run.font.size is not None and
@@ -60,12 +73,14 @@ def check_deck(path: Path) -> dict:
         'limitations': ['No proof of text fit, overlaps, font availability, or glyph coverage.',
                        'No source comparison or validation of figure labels and data.',
                        'Only outer nonrotated shape boxes are checked precisely.',
-                       'Masters, group internals, and chart text require rendered/manual checks.',
+                       'Masters, group geometry, and chart text require rendered/manual checks.',
                        'A PASS here is not a READY release decision.'],
     }
 
 
 def main() -> int:
+    from preflight import configure_console
+    configure_console()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('pptx', type=Path)
     parser.add_argument('--out', type=Path, required=True)

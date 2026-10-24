@@ -6,6 +6,8 @@ slide IDs, not generic "all checks passed" boilerplate.
 
 ## Gate 1 — Approval and timing
 
+Run `plan_check.py` (production §4); exit `0` is required, and every warning is
+reviewed. It checks plan structure, not scientific truth or rehearsal timing.
 Verify `slide-plan.json` records actual outline approval or an explicit waiver.
 Do not write an approval timestamp or quotation that was not observed. If the
 outline changes materially, apply the approval policy again. Record whether the
@@ -34,20 +36,21 @@ misleading crop, or causal overstatement is a blocking `FAIL`.
 ## Gate 3 — Automated structure
 
 `scripts/check_deck.py` checks readable PPTX packaging, slide count, outer shape
-bounds, explicit small fonts, and presence of slide notes. It conservatively
-marks group-internal geometry as needing manual inspection and does not claim
-to resolve rotated shapes, masters, text layout, or chart internals.
+bounds, explicit small fonts, presence of slide notes, and leftover `<...>` or
+`[NEEDS SOURCE]`/`[TBD]`/`[TODO]` markers in slides, groups, tables, and notes.
+It conservatively marks group-internal geometry as needing manual inspection
+and does not resolve rotated shapes, masters, text layout, or chart internals.
+`plan_check.py --pptx` confirms titles and planned note text reached the deck.
 
 Its warnings require review, not automatic deletion of intentional design.
-It cannot prove that text fits, that a scientific figure is complete, or that
-colors are accessible. Embedded image labels and font substitution cannot be
-validated from text runs alone. Geometry success must not be described as
-"no text overflow" or "all slides readable".
+Geometry success must not be described as "no text overflow" or "all slides
+readable" (see Tool limits).
 
 ## Gate 4 — Rendered visual review
 
-Produce a fresh PDF and all slide PNGs from the final PPTX. A successful file
-export establishes only that an exporter produced a file. Open every slide PNG;
+Produce a fresh PDF and all slide PNGs from the final PPTX. The QA render
+includes hidden slides; confirm the page count equals the slide count.
+Open every slide PNG;
 contact sheets support global consistency but cannot establish small-label
 readability. Specifically inspect:
 
@@ -67,9 +70,32 @@ essential labels is a blocking `FAIL`.
 
 Every main slide has notes in the requested language, explanation beyond the
 visible words, a transition, timing, and source/caveats. Backup slides have useful
-Q&A notes. Verify notes are actually embedded in the delivered PPTX or explicitly
-report the absent capability. Check required files exist and that PDF and PPTX
-refer to the same final revision. Verify shared URLs/QR destinations when used.
+Q&A notes. Verify notes are actually embedded in the delivered PPTX and match
+`<deck-stem>.speaker-notes.md`, or explicitly report the absent capability.
+Check required files exist and that PDF and PPTX refer to the same final revision.
+Verify shared URLs/QR destinations when used.
+
+## Gate 6 — Wording (all languages)
+
+Read every slide's visible text and every note as the audience or presenter
+would. Check, in any language:
+
+1. **Concrete, not abstract**: claims say what changed, by how much, against
+   what, under which condition; no "significantly improved", "various factors".
+2. **No reasoning traces**: no agent reasoning, work memos, self-checks,
+   assumptions-in-progress, or instructions to the presenter about the agent's
+   own process (e.g. "검토 결과", "가정:", "[메모: ...]", "this slide should emphasize").
+3. **Newcomer-readable, not childish**: a researcher new to the topic can follow;
+   technical terms stay precise; no infantilizing analogies.
+4. **No private words**: no internal IDs (claim/source IDs, `slide-plan` fields,
+   file names such as `Fig3a_crop`), no self-coined or undefined abbreviations;
+   spell out standard abbreviations at first use.
+
+When slide or notes language is Korean, these four are the mandatory rules of
+[`korean-writing.md`](korean-writing.md) §1; also run its §4 self-check list
+(format: unit spacing, endings, notes register and pacing). Record checked slide
+IDs. Any item 2 or 4 violation in delivered text, or an unsupported concrete
+number added to satisfy item 1, is a `FAIL`.
 
 ## Release decision
 
@@ -86,3 +112,20 @@ not claim renderer parity or venue readiness. When rendering or source access
 fails, state the precise missing step rather than claiming an invisible review.
 A final status must be set by the reviewing agent/person, not by the geometry
 script automatically.
+
+## Tool limits (state once in the report's limitations section)
+
+Other references point here instead of repeating these caveats.
+
+- python-pptx writes PPTX; it does not render or measure text layout.
+- `check_deck.py` checks packaging and outer geometry only: not text fit, figure
+  completeness, embedded-image labels, font substitution, or color accessibility.
+- A successful PDF/PNG export proves a file was produced, not that it was inspected.
+  LibreOffice output is not proof of identical rendering in the venue's PowerPoint.
+- Font names written to runs do not install or embed fonts; recipient machines may
+  substitute.
+- Contrast targets follow WCAG ratios; passing them does not guarantee projector
+  readability or certify color-vision accessibility.
+- `make_theme.py` tints by deterministic RGB mixing, not perceptual optimization.
+- `.source.json` records provenance, not a scientific review of the crop.
+- Templates are data contracts; nothing parses a paper automatically.

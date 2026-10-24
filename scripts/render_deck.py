@@ -9,25 +9,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 import pymupdf
 from PIL import Image, ImageDraw
 from pptx import Presentation
-
-
-def resolve_soffice(requested: str | None) -> str:
-    if requested:
-        found = shutil.which(requested)
-        if found:
-            return found
-        candidate = Path(requested).expanduser()
-        if candidate.is_file():
-            return str(candidate.resolve())
-        raise FileNotFoundError(f'LibreOffice executable not found: {requested}')
-    found = shutil.which('soffice') or shutil.which('libreoffice')
-    if not found:
-        raise FileNotFoundError('No LibreOffice renderer. Supply --soffice PATH or use a supported renderer; '
-                                'visual QA remains NOT_RUN.')
-    return found
+from preflight import resolve_soffice, configure_console
 
 
 def contact_sheets(pages: list[Path], output: Path) -> list[str]:
@@ -70,40 +56,49 @@ def render_deck(pptx: Path, out_dir: Path, dpi: int = 150,
         raise ValueError('Cannot render a presentation with no slides.')
     pdf_name = pptx.stem + '.pdf'
     products = []
-    if out_dir.exists():
-        for pattern in ('slide-*.png', 'contact-sheet-*.png', 'render-report.json', pdf_name):
-            products.extend(out_dir.glob(pattern))
-    if products and not overwrite:
-        raise FileExistsError('Generated products already exist. Choose a fresh --out-dir '
-                              'or use --overwrite to replace only this renderer\'s products.')
+    previous = out_dir / 'render-report.json'
+    if previous.is_file():
+        old = json.loads(previous.read_text(encoding='utf-8'))
+        names = old.get('slide_images', []) + old.get('contact_sheets', []) + [old.get('pdf_file', ''), previous.name]
+        for name in names:
+            if name and Path(name).name == name and (out_dir / name).is_file():
+                products.append(out_dir / name)
+    planned = [pdf_name, 'render-report.json']
+    planned += [f'slide-{n:03d}.png' for n in range(1, slide_count + 1)]
+    planned += [f'contact-sheet-{n:02d}.png' for n in range(1, (slide_count + 11) // 12 + 1)]
+    conflicts = [name for name in planned if (out_dir / name).exists() and out_dir / name not in products]
+    if conflicts or (products and not overwrite):
+        raise FileExistsError('Existing outputs are unowned or --overwrite was not supplied: ' + str(conflicts))
     out_dir.mkdir(parents=True, exist_ok=True)
     version_result = subprocess.run([executable, '--version'], capture_output=True,
-                                    text=True, timeout=20, check=True)
-    version = (version_result.stdout or version_result.stderr).strip()
-    with tempfile.TemporaryDirectory(prefix='academic-slides-render-') as temp:
-        temp_root = Path(temp)
+                                    text=True, encoding='utf-8', errors='replace', timeout=20, check=True)
+    version = (version_result.stdout or '').strip() or (version_result.stderr or '').strip() or 'unknown'
+    with tempfile.TemporaryDirectory(prefix='academic-slides-render-', ignore_cleanup_errors=True) as temp:
+        temp_root = Path(temp).resolve()
         convert_dir, profile_dir = temp_root / 'converted', temp_root / 'profile'
         convert_dir.mkdir()
         cmd = [executable, f'-env:UserInstallation={profile_dir.as_uri()}',
                '--headless', '--nologo', '--nodefault', '--norestore',
-               '--convert-to', 'pdf:impress_pdf_Export', '--outdir', str(convert_dir), str(pptx)]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, check=False)
+               '--convert-to', 'pdf:impress_pdf_Export:{"ExportHiddenSlides":{"type":"boolean","value":"true"}}', '--outdir', str(convert_dir), str(pptx)]
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout, check=False)
         pdf = convert_dir / pdf_name
         if result.returncode != 0 or not pdf.is_file() or pdf.stat().st_size == 0:
             raise RuntimeError(f'PDF export failed (exit {result.returncode}). '
-                               f'Stdout: {result.stdout.strip()} Stderr: {result.stderr.strip()}')
+                               f"Stdout: {(result.stdout or '').strip()} Stderr: {(result.stderr or '').strip()}")
         with pymupdf.open(pdf) as doc:
             if len(doc) != slide_count:
                 raise RuntimeError(f'Slide/page mismatch: {slide_count} slides, {len(doc)} PDF pages.')
             for page in doc:
                 if page.rect.width * page.rect.height * (dpi / 72) ** 2 > 80_000_000:
                     raise ValueError('Slide raster would exceed 80 megapixels; reduce DPI.')
-        # Replace only renderer-owned output patterns, after fresh conversion succeeded.
+        # Replace only files listed in the previous report, after conversion succeeded.
         for path in products:
             if path.is_file():
                 path.unlink()
         final_pdf = out_dir / pdf_name
         shutil.copy2(pdf, final_pdf)
+    if temp_root.exists():
+        warnings.warn(f'Render temporary directory could not be fully cleaned: {temp_root}')
     page_paths = []
     with pymupdf.open(final_pdf) as doc:
         for number, page in enumerate(doc, 1):
@@ -126,6 +121,7 @@ def render_deck(pptx: Path, out_dir: Path, dpi: int = 150,
 
 
 def main() -> int:
+    configure_console()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('pptx', type=Path)
     parser.add_argument('--out-dir', type=Path, required=True)

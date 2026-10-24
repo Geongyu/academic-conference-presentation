@@ -50,9 +50,16 @@ def accessible(seed: str, background: str, minimum: float) -> str:
 
 
 def make_theme(accent: str = '#2457C5', mode: str = 'light',
-               font: str = 'Noto Sans CJK KR', secondary: str | None = None) -> dict:
+               font: str | None = None, secondary: str | None = None) -> dict:
     if mode not in ('light', 'dark'):
         raise ValueError('Mode must be light or dark.')
+    if font is None:
+        from preflight import font_inventory
+        candidates = font_inventory()['korean_candidates_found']
+        font = candidates[0] if candidates else 'sans-serif'
+        if not candidates:
+            import warnings
+            warnings.warn('No Korean font detected; supply --font and verify rendering.')
     if not font.strip():
         raise ValueError('A font-family name is required; verify installation separately.')
     preferred = normalize_hex(accent)
@@ -84,7 +91,7 @@ def make_theme(accent: str = '#2457C5', mode: str = 'light',
         'version': '1.0.0', 'mode': mode, 'tokens': tokens,
         'canvas': {'width_in': 13.333333, 'height_in': 7.5, 'margin_in': 0.55},
         'typography': {'family': font, 'east_asian_family': font,
-                       'cover_pt': 44, 'title_pt': 34, 'body_pt': 24,
+                       'language': 'ko-KR', 'cover_pt': 44, 'title_pt': 34, 'body_pt': 24,
                        'annotation_pt': 20, 'citation_pt': 12},
         'semantic_map': {}, 'contrast_checks': checks,
         'adjustments': {key: value for key, value in tokens.items()
@@ -98,11 +105,13 @@ def make_theme(accent: str = '#2457C5', mode: str = 'light',
 
 
 def main() -> int:
+    from preflight import configure_console
+    configure_console()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--accent', default='#2457C5')
     parser.add_argument('--secondary')
     parser.add_argument('--mode', choices=('light', 'dark'), default='light')
-    parser.add_argument('--font', default='Noto Sans CJK KR')
+    parser.add_argument('--font')
     parser.add_argument('--out', required=True, type=Path)
     args = parser.parse_args()
     try:

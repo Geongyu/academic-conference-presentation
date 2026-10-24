@@ -55,6 +55,8 @@ def crop_pdf(pdf: Path, page_number: int, box: list[float], dpi: int,
 
 
 def main() -> int:
+    from preflight import configure_console
+    configure_console()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pdf', required=True, type=Path)
     parser.add_argument('--page', required=True, type=int)

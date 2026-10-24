@@ -32,17 +32,21 @@ def fixture_pdf(path: Path) -> None:
 
 
 def main() -> int:
+    from preflight import configure_console
+    configure_console()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out-dir', required=True, type=Path)
     parser.add_argument('--font')
     parser.add_argument('--render', action='store_true')
     parser.add_argument('--soffice')
+    parser.add_argument('--overwrite', action='store_true')
     args = parser.parse_args()
     try:
         output = args.out_dir.resolve()
         output.mkdir(parents=True, exist_ok=True)
-        if (output / 'smoke-test.pptx').exists():
-            raise FileExistsError('Use a fresh smoke-test output directory.')
+        if not args.overwrite and any((output / name).exists() for name in
+                                      ('smoke-test.pptx', 'smoke-test.speaker-notes.md')):
+            raise FileExistsError('Use a fresh smoke-test output directory or --overwrite.')
         font = args.font
         if not font:
             candidates = font_inventory().get('korean_candidates_found', [])
@@ -72,10 +76,11 @@ def main() -> int:
              cue='두 번째 줄의 한글·영어·그리스 문자와 하단 도형을 확인한다.',
              transition='다음 장에서 PDF 패널 삽입을 확인합니다.', seconds=30,
              source='자체 생성한 기능 점검 자료. 연구 결과가 아님.'))
-        slide = add_slide(prs, theme, 'PDF 패널을 비율 그대로 삽입합니다', 2,
+        slide = add_slide(prs, theme, 'PDF 패널을 비율 그대로\n삽입합니다', 2,
                           citation='출처: 자체 생성 synthetic-source.pdf, Fig. 1. 연구 근거가 아닙니다.')
-        add_picture_contain(slide, crop, 0.65, 1.85, 12.0, 4.75)
-        notes.append(set_notes(slide, slide_id='S02', title='PDF 패널을 비율 그대로 삽입합니다',
+        assert slide.content_top > 1.85
+        add_picture_contain(slide, crop, 0.65, slide.content_top, 12.0, 6.8 - slide.content_top)
+        notes.append(set_notes(slide, slide_id='S02', title='PDF 패널을 비율 그대로\n삽입합니다',
              objective='벡터 PDF 패널의 래스터 추출 및 비율 보존을 확인한다.',
              explanation='원본에 있던 도형, 연결선, 레이블과 캡션이 유지되어야 합니다.',
              cue='입력·변환·출력 레이블과 하단 캡션을 확인한다.',
@@ -83,6 +88,7 @@ def main() -> int:
              source='FIXTURE01, synthetic-source.pdf, p. 1, synthetic Fig. 1.'))
         slide = add_slide(prs, theme, '핵심 메시지를 남긴 채 질문을 받습니다', 3,
                           citation='기능 점검용 take-home 화면 · 실제 학술 내용은 원자료에 근거해야 합니다.')
+        slide._element.set('show', '0')
         add_text(slide, '근거는 크게, 설명은 발표 노트로', 0.58, 2.05, 12.0, 1.0,
                  theme, size=36, bold=True, fill=theme['tokens']['primary_ink'])
         add_text(slide, '결과 파일 생성과 검수 완료를 구분합니다.', 0.58, 3.45, 12.0, 0.8,
@@ -94,13 +100,23 @@ def main() -> int:
              cue='핵심 문장과 Questions를 확인한다.', transition='질문을 받는다.',
              seconds=20, source='기능 점검 예시. 실제 발표자료의 검증을 대신하지 않음.'))
         destination = output / 'smoke-test.pptx'
-        save_deck(prs, destination, notes)
+        save_deck(prs, destination, notes, overwrite=args.overwrite)
+        assert destination.with_name('smoke-test.speaker-notes.md').is_file()
+        from regression_checks import run_checks
+        run_checks(output / 'regression', theme, overwrite=args.overwrite)
         structural = check_deck(destination)
         (output / 'structural-qa.json').write_text(json.dumps(structural, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
         if structural['errors']:
             raise RuntimeError(f"Structural errors: {structural['errors']}")
         if args.render:
-            render_deck(destination, output / 'rendered', soffice=args.soffice)
+            rendered = output / 'rendered'
+            rendered.mkdir(exist_ok=True)
+            sentinel = rendered / 'slide-user.png'
+            sentinel.write_bytes(b'unrelated file')
+            report = render_deck(destination, rendered, soffice=args.soffice, overwrite=args.overwrite)
+            assert report['rendered_pages'] == 3
+            render_deck(destination, rendered, soffice=args.soffice, overwrite=True)
+            assert sentinel.read_bytes() == b'unrelated file'
         print(f'Created {destination} with three embedded notes records. '
               'Open the rendered images before claiming visual QA.')
         return 0

@@ -1,11 +1,11 @@
 # Package validation record
 
 Package: academic-conference-presentation v1.0.0
-Validation date: 2026-09-29
+Validation dates: 2026-09-29 (initial record); 2026-10-25 (Korean Windows, see below)
 Scope: package structure, helper execution, and a synthetic three-slide fixture.
 No real research presentation was created or scientifically validated for this test.
 
-## Environment actually used
+## Environment actually used (2026-09-29)
 
 - Python 3.13.5
 - python-pptx 1.0.2
@@ -60,13 +60,38 @@ certifies untested fonts, equations, charts, or arbitrary future deck layouts.
 - Complex native charts, equation objects, arbitrary templates, and animations
   require deck-specific testing beyond this smoke fixture.
 
+## Korean Windows validation (2026-10-25)
+
+Run by the orchestrator after the script revision. Earlier sections describe the
+2026-09-29 record of the previous helper version.
+
+Environment: Korean Windows 11 (console code page cp949), Python 3.12.10,
+python-pptx 1.0.2, PyMuPDF 1.28.2, LibreOffice 26.8.1 (not on PATH).
+
+Before the fix, `preflight.py` crashed on this system with a cp949 decoding
+error.
+
+| Check | Result | Scope |
+|---|---|---|
+| `preflight.py` | PASS | Malgun Gothic and LibreOffice detected automatically (via `soffice.com`); version string populated |
+| `smoke_test.py --render` without `--font` / `--soffice` | PASS | Synthetic fixture built and rendered |
+| `smoke_test.py --render --overwrite` rerun in the same folder | PASS | Re-render over existing output |
+| 2-line title | PASS | Accent bar rendered below the title, no overlap, in the smoke fixture |
+| Hidden slide | PASS | Included in the exported PDF |
+| `regression_checks.py` | PASS | Bundled regression fixtures |
+
+Scope: the synthetic smoke fixture only. No real talk, scientific content,
+native PowerPoint, or other Windows configuration was tested.
+
 ## Reproduce the smoke fixture
 
-From the package root, with the required packages, renderer, and Korean font:
+With the required packages, renderer, and Korean font, write outputs outside the
+skill folder (`<SKILL_DIR>` is this package's absolute path):
 
 ```bash
-python scripts/preflight.py
-python scripts/smoke_test.py --out-dir work/smoke-validation --render
+python "<SKILL_DIR>/scripts/preflight.py"
+python "<SKILL_DIR>/scripts/smoke_test.py" --out-dir "smoke-validation" --render
+python "<SKILL_DIR>/scripts/regression_checks.py" --out-dir "regression-validation"
 ```
 
 Open every resulting PNG. The scripts deliberately retain visual/scientific
